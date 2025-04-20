@@ -1,0 +1,97 @@
+import pandas as pd  
+import seaborn as sns  
+import matplotlib.pyplot as plt  
+import numpy as np  
+
+# 1. Load the data  
+df = pd.read_csv('/workspace/boilerplate-medical-data-visualizer/medical_examination.csv')  
+
+# 2. Calculate overweight  
+df['overweight'] = (df['weight']/((df['height']/100)**2)).apply(lambda x: 0 if x < 25 else 1)  
+
+# 3. Normalize cholesterol and glucose  
+df['cholesterol'] = df['cholesterol'].apply(lambda x: 0 if x == 1 else 1)  
+df['gluc'] = df['gluc'].apply(lambda x: 0 if x == 1 else 1)  
+
+# 4. Create catplot function  
+def draw_cat_plot():  
+    # Create DataFrame for categorical variables  
+    df_cat = pd.melt(  
+        df,  
+        id_vars=['cardio'],  
+        value_vars=['cholesterol', 'gluc', 'smoke', 'alco', 'active', 'overweight'],  
+        var_name='variable',  
+        value_name='value'  
+    )  
+    
+    #5. Group and reformat the data  
+    df_cat = (  
+        df_cat.groupby(['cardio', 'variable', 'value'])['value']  
+        .count()  
+        .rename('total')  
+        .reset_index()  
+        .rename(columns={'value': 'feature_value'})  
+    )  
+    
+    #6.  Convert to string type  
+    df_cat['feature_value'] = df_cat['feature_value'].astype(str)  
+    df_cat['cardio'] = df_cat['cardio'].astype(str)  
+    
+    #7. Create the plot  
+    g = sns.catplot(  
+        data=df_cat,  
+        x='variable',  
+        y='total',  
+        hue='feature_value',  
+        col='cardio',  
+        kind='bar',  
+        height=5,  
+        aspect=1.5,  
+        sharey=False  
+    )  
+    
+    #8. Improve aesthetics  
+    g.set_axis_labels("Feature", "Total Count")  
+    g.set_titles("Cardio Status: {col_name}")  
+    g.fig.subplots_adjust(top=0.8)  
+    g.fig.suptitle('Distribution of Health Indicators by Cardio Status')  
+    
+    #9. Store and save figure  
+    fig = g.fig  
+    fig.savefig('catplot.png')  
+    return fig  
+
+
+# 10
+def draw_heat_map():
+    # 11
+    validData = (df['height']>=df['height'].quantile(0.0025) & df['ap_lo']<=df['ap_hi'] & df['height']<=df['height'].quantile(0.975) & df['weight']>=df['weight'].quantile(0.0025) & df['weight']<=df['weight'].quantile(0.975)) 
+    df_heat = df[['cholesterol', 'gluc', 'smoke', 'alco', 'active', 'overweight', 'cardio']]
+
+
+    # 12
+    corr = df_heat.corr()
+
+    # 13
+    mask = np.triu(np.ones_like(corr, dtype=bool))
+
+
+
+
+    # 14
+    fig, ax = plt.subplots(figsize=(10,6))
+
+    # 15
+    sns.heatmap(corr, 
+            mask=mask, 
+            annot=True, 
+            cmap='coolwarm', 
+            fmt='.2f', 
+            square=True, 
+            cbar_kws={"shrink": .8})
+
+
+
+    # 16
+    fig.savefig('heatmap.png')
+    return fig
